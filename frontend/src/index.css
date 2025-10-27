@@ -1,0 +1,450 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url("https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Space+Mono:wght@400;700&display=swap");
+
+* {
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: "Space Mono", monospace;
+  background: #000;
+  min-height: 100vh;
+  overflow-x: hidden;
+  position: relative;
+}
+
+/* Animated background gradient */
+body::before {
+  content: "";
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: linear-gradient(
+    45deg,
+    #0a0a0a 0%,
+    #1a1a2e 20%,
+    #16213e 40%,
+    #0f3460 60%,
+    #1a1a2e 80%,
+    #0a0a0a 100%
+  );
+  background-size: 400% 400%;
+  animation: gradientShift 15s ease infinite;
+  z-index: -3;
+}
+
+/* Matrix grid pattern */
+body::after {
+  content: "";
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-image: linear-gradient(
+      rgba(0, 255, 255, 0.03) 1px,
+      transparent 1px
+    ),
+    linear-gradient(90deg, rgba(0, 255, 255, 0.03) 1px, transparent 1px);
+  background-size: 40px 40px;
+  animation: gridFloat 20s ease-in-out infinite;
+  z-index: -2;
+}
+
+@keyframes gradientShift {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+@keyframes gridFloat {
+  0%,
+  100% {
+    transform: translate(0, 0) scale(1);
+    opacity: 0.3;
+  }
+  50% {
+    transform: translate(20px, 20px) scale(1.05);
+    opacity: 0.5;
+  }
+}
+
+/* Floating particles for hackathon theme */
+.hackathon-particles {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: -1;
+}
+
+/* Enhanced code particles */
+.code-particle {
+  position: absolute;
+  color: #00ff88;
+  font-family: "Space Mono", monospace;
+  font-size: 12px;
+  opacity: 0.6;
+  animation: floatCode 8s infinite linear;
+  text-shadow: 0 0 10px currentColor;
+}
+
+/* Hexagon particles */
+.hex-particle {
+  position: absolute;
+  width: 20px;
+  height: 20px;
+  background: linear-gradient(45deg, #00ffff, #ff00ff);
+  clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+  animation: hexFloat 12s infinite ease-in-out;
+  opacity: 0.4;
+}
+
+/* Data stream particles */
+.data-stream {
+  position: absolute;
+  color: #ff00ff;
+  font-family: "Space Mono", monospace;
+  font-size: 10px;
+  opacity: 0.7;
+  animation: dataFlow 6s infinite linear;
+  text-shadow: 0 0 5px currentColor;
+}
+
+@keyframes floatCode {
+  0% {
+    transform: translateY(100vh) translateX(-20px) rotate(0deg);
+    opacity: 0;
+  }
+  10% {
+    opacity: 0.8;
+  }
+  90% {
+    opacity: 0.3;
+  }
+  100% {
+    transform: translateY(-20px) translateX(20px) rotate(360deg);
+    opacity: 0;
+  }
+}
+
+@keyframes hexFloat {
+  0% {
+    transform: translateY(100vh) translateX(0) rotate(0deg) scale(0.5);
+    opacity: 0;
+  }
+  20% {
+    opacity: 0.6;
+  }
+  80% {
+    opacity: 0.2;
+  }
+  100% {
+    transform: translateY(-50px) translateX(50px) rotate(360deg) scale(1.5);
+    opacity: 0;
+  }
+}
+
+@keyframes dataFlow {
+  0% {
+    transform: translateX(-100vw) translateY(0);
+    opacity: 0;
+  }
+  10% {
+    opacity: 1;
+  }
+  90% {
+    opacity: 0.5;
+  }
+  100% {
+    transform: translateX(100vw) translateY(-30px);
+    opacity: 0;
+  }
+}
+
+/* Enhanced circuit lines animation */
+.circuit-lines {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: -1;
+  opacity: 0.6;
+}
+
+.circuit-line {
+  position: absolute;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    #00ffff,
+    #ff00ff,
+    #00ffff,
+    transparent
+  );
+  animation: circuitPulse 4s ease-in-out infinite;
+  box-shadow: 0 0 10px currentColor;
+}
+
+.circuit-line.horizontal {
+  height: 3px;
+  width: 100%;
+}
+
+.circuit-line.vertical {
+  width: 3px;
+  height: 100%;
+}
+
+/* Pulse rings */
+.pulse-ring {
+  position: fixed;
+  border: 2px solid #00ffff;
+  border-radius: 50%;
+  animation: pulseRing 3s ease-out infinite;
+  z-index: -1;
+}
+
+/* Energy orbs */
+.energy-orb {
+  position: fixed;
+  width: 4px;
+  height: 4px;
+  background: radial-gradient(circle, #ff00ff, transparent);
+  border-radius: 50%;
+  animation: orbFloat 8s ease-in-out infinite;
+  box-shadow: 0 0 20px #ff00ff;
+  z-index: -1;
+}
+
+@keyframes circuitPulse {
+  0%,
+  100% {
+    opacity: 0.3;
+    box-shadow: 0 0 5px currentColor;
+    filter: hue-rotate(0deg);
+  }
+  33% {
+    opacity: 0.8;
+    box-shadow: 0 0 25px currentColor, 0 0 40px currentColor;
+    filter: hue-rotate(120deg);
+  }
+  66% {
+    opacity: 0.6;
+    box-shadow: 0 0 15px currentColor, 0 0 30px currentColor;
+    filter: hue-rotate(240deg);
+  }
+}
+
+@keyframes pulseRing {
+  0% {
+    transform: scale(0.1);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(2);
+    opacity: 0;
+  }
+}
+
+@keyframes orbFloat {
+  0%,
+  100% {
+    transform: translate(0, 0) scale(1);
+    opacity: 0.8;
+  }
+  25% {
+    transform: translate(100px, -50px) scale(1.5);
+    opacity: 0.6;
+  }
+  50% {
+    transform: translate(200px, 50px) scale(0.8);
+    opacity: 1;
+  }
+  75% {
+    transform: translate(50px, 100px) scale(1.2);
+    opacity: 0.4;
+  }
+}
+
+/* Binary rain effect */
+.binary-rain {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: -1;
+  opacity: 0.1;
+}
+
+.binary-char {
+  position: absolute;
+  color: #00ff00;
+  font-family: "Space Mono", monospace;
+  font-size: 16px;
+  animation: binaryFall 4s linear infinite;
+}
+
+@keyframes binaryFall {
+  0% {
+    transform: translateY(-100px);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(100vh);
+    opacity: 0;
+  }
+}
+
+/* Glowing borders for containers */
+.cyber-border {
+  border: 1px solid rgba(0, 255, 255, 0.3);
+  box-shadow: 0 0 10px rgba(0, 255, 255, 0.2),
+    inset 0 0 10px rgba(0, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  background: rgba(0, 0, 0, 0.3);
+}
+
+/* Scanning line effect */
+.scan-line {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, #ff00ff, transparent);
+  animation: scanMove 5s linear infinite;
+  z-index: -1;
+  opacity: 0.6;
+}
+
+@keyframes scanMove {
+  0% {
+    transform: translateY(0);
+  }
+  100% {
+    transform: translateY(100vh);
+  }
+}
+
+.repo-row {
+  transition: all 0.5s ease-in-out;
+}
+
+.repo-highlight {
+  animation: stockTickerFlash 2s ease-in-out;
+  box-shadow: 0 0 25px rgba(34, 197, 94, 0.9), 0 0 50px rgba(34, 197, 94, 0.6);
+  background: linear-gradient(
+    45deg,
+    rgba(34, 197, 94, 0.2),
+    rgba(16, 185, 129, 0.15)
+  );
+  color: #10b981 !important;
+  border: 1px solid rgba(34, 197, 94, 0.7);
+  position: relative;
+  overflow: hidden;
+}
+
+.repo-highlight::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(34, 197, 94, 0.4),
+    transparent
+  );
+  animation: scanHighlight 1.5s ease-in-out;
+  z-index: 1;
+}
+
+.repo-highlight::after {
+  content: "NEW";
+  position: absolute;
+  top: 2px;
+  right: 4px;
+  font-size: 8px;
+  font-weight: bold;
+  color: #22c55e;
+  background: rgba(34, 197, 94, 0.2);
+  padding: 1px 4px;
+  border-radius: 2px;
+  border: 1px solid rgba(34, 197, 94, 0.5);
+  z-index: 2;
+  animation: pulseNew 1s ease-in-out infinite;
+}
+
+@keyframes stockTickerFlash {
+  0% {
+    background: linear-gradient(
+      45deg,
+      rgba(34, 197, 94, 0.4),
+      rgba(16, 185, 129, 0.3)
+    );
+    box-shadow: 0 0 30px rgba(34, 197, 94, 1), 0 0 60px rgba(34, 197, 94, 0.8);
+    transform: scale(1.02);
+  }
+  25% {
+    background: linear-gradient(
+      45deg,
+      rgba(34, 197, 94, 0.3),
+      rgba(16, 185, 129, 0.2)
+    );
+    box-shadow: 0 0 20px rgba(34, 197, 94, 0.7), 0 0 40px rgba(34, 197, 94, 0.5);
+  }
+  50% {
+    background: linear-gradient(
+      45deg,
+      rgba(34, 197, 94, 0.25),
+      rgba(16, 185, 129, 0.15)
+    );
+    box-shadow: 0 0 15px rgba(34, 197, 94, 0.6), 0 0 30px rgba(34, 197, 94, 0.4);
+  }
+  100% {
+    background: transparent;
+    box-shadow: none;
+    transform: scale(1);
+  }
+}
+
+@keyframes scanHighlight {
+  0% {
+    left: -100%;
+  }
+  100% {
+    left: 100%;
+  }
+}
+
+@keyframes pulseNew {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.7;
+    transform: scale(0.95);
+  }
+}
