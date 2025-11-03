@@ -4,6 +4,18 @@ A realtime dashboard that visualizes Git commit activities from hackathon teams.
 
 ---
 
+## Documentation Images
+
+The gallery below embeds every asset stored in `docs/images` so they render directly on GitHub.
+
+![Animation overlay](docs/images/animation.png)
+![Dashboard overview](docs/images/dashboard.png)
+![Start frame](docs/images/start_frame.png)
+![Workflow list](docs/images/workflows.png)
+![Workflow summary](docs/images/workflow_summary.png)
+
+---
+
 ## Tech Stack
 - React 19 + Vite 7
 - React Router 7
@@ -139,23 +151,6 @@ docker run -it --rm \
   -v ~/.n8n:/home/node/.n8n \
   n8nio/n8n:latest
 ```
-
-### Frontend screenshots
-- Overall dashboard (UI)
-  ![Dashboard](docs/images/dashboard.png)
-
-- Animation overlay
-  ![Animation](docs/images/animation.png)
-
-### n8n overview (backend)
-- Start frame
-  ![Start Frame](docs/images/start_frame.png)
-
-- Workflow list
-  ![Workflows](docs/images/workflows.png)
-
-- Workflow summary
-  ![Workflow Summary](docs/images/workflow_summary.png)
 
 ---
 
