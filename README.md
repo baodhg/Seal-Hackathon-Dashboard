@@ -4,13 +4,9 @@ A realtime dashboard that visualizes Git commit activities from hackathon teams.
 
 ---
 
-## Documentation Images
+## Overview about N8N
 
-The gallery below embeds every asset stored in `docs/images` so they render directly on GitHub.
-
-![Animation overlay](docs/images/animation.png)
-![Dashboard overview](docs/images/dashboard.png)
-![Start frame](docs/images/start_frame.png)
+The gallery below embeds **n8n** workflow stored in `docs/images`.
 ![Workflow list](docs/images/workflows.png)
 ![Workflow summary](docs/images/workflow_summary.png)
 
