@@ -1,0 +1,796 @@
+{
+  "name": "process-commit",
+  "nodes": [
+    {
+      "parameters": {
+        "url": "={{ $('get commit info').item.json.commit_api_url }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "User-Agent",
+              "value": "n8n-workflow"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        128,
+        -320
+      ],
+      "id": "babfb32e-1ab2-4ded-988b-ac12174ae9bb",
+      "name": "Get diff",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "LJChBUVqPwSaw3Fk",
+          "name": "SEAL-HACKATHON"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const diffNodeName = \"Get diff\";\nconst diffResults = $(diffNodeName).all(); \n\n\nlet totalAdditions = 0; // Tương đương với 'insertions'\nlet totalDeletions = 0; // Tương đương với 'deletions'\nlet modifiedFileCount = 0; // Số lượng file có status là 'modified'\nlet messages = [];\nlet allPatches = [];\n\nif (diffResults.length > 0) {\n  for (const item of diffResults) {\n    if (item.json) {\n      \n      // 1. TÍNH TỔNG ADDITIONS VÀ DELETIONS (từ thuộc tính 'stats' của commit)\n      if (item.json.stats) {\n        totalAdditions += item.json.stats.additions; // Lấy insertions\n        totalDeletions += item.json.stats.deletions; // Lấy deletions\n      }\n\n      // Lấy commit message\n      if (item.json.commit && item.json.commit.message) {\n        messages.push(item.json.commit.message);\n      }\n      \n      // 2. TÍNH SỐ LƯỢNG FILE MODIFIED VÀ TỔNG HỢP PATCH CONTENT\n      if (item.json.files && Array.isArray(item.json.files)) {\n        for (const file of item.json.files) {\n          if (file.status === 'modified') {\n            modifiedFileCount++; // Đếm số lượng file modified\n          }\n          if (file.patch) {\n            // Định dạng lại patch content cho dễ đọc\n            allPatches.push(`--- a/${file.filename}\\n+++ b/${file.filename}\\n${file.patch}`);\n          }\n        }\n      }\n    }\n  }\n}\n\n// --- PHẦN 3: TẠO DỮ LIỆU CUỐI CÙNG ---\n\nconst fullDataForAI = {\n  repo_full_name: $('get commit info').item.json.webhook_body.repository.full_name,\n  branch: $('get commit info').item.json.webhook_body.ref.split('/').pop(),\n  author_name: $('get commit info').item.json.webhook_body.head_commit.author.name,\n  author_email: $('get commit info').item.json.webhook_body.head_commit.author.email,\n  timestamp: $('get commit info').item.json.webhook_body.head_commit.timestamp,\n  commit_sha: $('get commit info').item.json.webhook_body.head_commit.id,\n  message: messages.join('; \\n'),\n  // Gán các giá trị đã tính toán:\n  added: totalAdditions,   // Tương ứng với insertions\n  removed: totalDeletions, // Tương ứng với deletions\n  modified: modifiedFileCount, // Số lượng file modified\n  diff_content: allPatches.join('\\n\\n')\n};\n\n// Tạo dữ liệu nhẹ hơn để gửi đi (ví dụ: Firebase)\nconst lightDataForFirebase = { ...fullDataForAI };\ndelete lightDataForFirebase.diff_content; // Loại bỏ patch content để giảm dung lượng\n\n// Trả về kết quả\nreturn {\n  json: {\n    firebaseData: lightDataForFirebase, // Dữ liệu nhẹ cho Firebase\n    aiData: fullDataForAI             // Dữ liệu đầy đủ cho các bước sau\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        336,
+        -320
+      ],
+      "id": "4d8db4d6-1c1b-4ab7-8623-03d833399b28",
+      "name": "git diff summation",
+      "executeOnce": false,
+      "alwaysOutputData": false
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://zenlyclone-7bda4-default-rtdb.asia-southeast1.firebasedatabase.app/commit.json",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json.firebaseData }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        528,
+        -320
+      ],
+      "id": "9e38802f-e056-4217-80d4-d3753315de8a",
+      "name": "INSERT Firebase",
+      "credentials": {
+        "googleApi": {
+          "id": "PjEuClXipRaKeGCf",
+          "name": "Google Service Account account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "338770ee-fbac-44a8-aba9-abe36a3c0a1b",
+              "name": "repoFullName",
+              "value": "={{ $('git diff summation').item.json.aiData.repo_full_name }}",
+              "type": "string"
+            },
+            {
+              "id": "97fe85f8-5c5c-4826-8971-fa2f4ede1320",
+              "name": "branchName",
+              "value": "={{ $('git diff summation').item.json.aiData.branch }}",
+              "type": "string"
+            },
+            {
+              "id": "02252ffb-5c40-42aa-b224-84a067a6b31d",
+              "name": "commitMessages",
+              "value": "={{ $('git diff summation').item.json.aiData.message }}",
+              "type": "string"
+            },
+            {
+              "id": "4cc8e5ef-8742-4874-8e4f-9d65aeda69b7",
+              "name": "programmingLanguage",
+              "value": "={{ $('get commit info').item.json.webhook_body.repository.language }}\n",
+              "type": "string"
+            },
+            {
+              "id": "d97b6df8-e052-42aa-b38f-ab012cb13c84",
+              "name": "changeStats",
+              "value": "={{\n  {\n    \"added\": $('git diff summation').item.json.aiData.added,\n    \"removed\": $('git diff summation').item.json.aiData.removed,\n    \"modified_files\": $('git diff summation').item.json.aiData.modified\n  }\n}}",
+              "type": "string"
+            },
+            {
+              "id": "da010869-684c-473d-ae4c-5f7e0c0db139",
+              "name": "diffContent",
+              "value": "={{ $('git diff summation').item.json.aiData.diff_content }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        704,
+        -320
+      ],
+      "id": "545b9f91-a798-4d65-aee3-7e5d806ed93a",
+      "name": "Data for AI"
+    },
+    {
+      "parameters": {
+        "jsCode": "const allowedRepos = [\n  \"baodhg/ABDP\",\n  \"avatarstar1133/4TML\",\n  \"AIZY-Outsourcing/AIZY\",\n  \"Truongdat815/404_Not_Found\",\n  \"KOKONOI1706/4Loop\",\n  \"NguyenTrongNguyen04/Recurrence_Champion\",\n  \"TeddyPhamDat/Dynamo\",\n  \"nguyenbatan21112003/BrightWay\",\n  \"NhatLam1711/Sigma_boy\",\n  \"UGing265/ca_nhan_2\",\n  \"mineduck1608/AlphaCode\",\n  \"waanney/HCMUT-NQPN\",\n  \"The3dit0r/navy-intelli-doc\",\n  \"BUICUONGG/VLR\",\n  \"mihtriii/nguxloi\",\n  \"bechovang/SEAL-Underrate\",\n  \"HCMUS-HQHuy/HCMUS-HUE\",\n  \"lanam1612/DrillTime\",\n  \"NinhThienLuan/404_Brain_Not_Found\",\n  \"JascomLily/Inglorious-Basterds\",\n  \"10022007khoine-web/Canhan1\",\n  // ...\n];\nreturn {\n  allowedRepos: allowedRepos\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -272,
+        -304
+      ],
+      "id": "5a2d5eee-8810-43be-a895-899d11ef801c",
+      "name": "repo list"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "3c11cf45-c947-4511-9ad5-2cced9da5d08",
+              "leftValue": "={{ $json.allowedRepos }}",
+              "rightValue": "={{ $('get commit info').item.json.webhook_body.repository.full_name }}",
+              "operator": {
+                "type": "array",
+                "operation": "contains",
+                "rightType": "any"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -96,
+        -304
+      ],
+      "id": "c332a881-43c6-4ab4-9c6d-df24bf4e7ad8",
+      "name": "Allowed Repo"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "550c356e-1536-49f9-949a-5cf1ecc9d4cb",
+        "options": {
+          "rawBody": true
+        }
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -672,
+        -304
+      ],
+      "id": "cd8b903b-4c1b-4e11-8523-977f94c69552",
+      "name": "Webhook",
+      "webhookId": "550c356e-1536-49f9-949a-5cf1ecc9d4cb"
+    },
+    {
+      "parameters": {
+        "jsCode": "const crypto = require('crypto');\nconst secret = 'SEAL-HACKATHON-FALL2025';\n\nconst inputData = $input.item.json;\nconst headers = inputData.headers || {};\nconst body = inputData.body;\nconst sig = headers['x-hub-signature-256'] || headers['X-Hub-Signature-256'];\nconst event = headers['x-github-event'] || headers['X-GitHub-Event'];\n\nif (!sig) return [];\n\nconst payload = JSON.stringify(body);\nconst mac = 'sha256=' + crypto.createHmac('sha256', secret).update(payload).digest('hex');\nconst verified = crypto.timingSafeEqual(Buffer.from(sig), Buffer.from(mac));\n\nif (!verified || event !== 'push' || !body.commits || body.commits.length === 0) {\n  return [];\n}\n\nconst repoFullName = body.repository.full_name;\n\nconst itemsToProcess = body.commits.map(commit => {\n  const apiUrl = `https://api.github.com/repos/${repoFullName}/commits/${commit.id}`;\n\n  return {\n    json: {\n      commit_api_url: apiUrl,\n      commit_id: commit.id,\n      commit_message: commit.message,\n      webhook_body: body\n    }\n  }\n});\n\nreturn itemsToProcess;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -480,
+        -304
+      ],
+      "id": "321ddba3-e7a9-46a9-ae40-f083d5c78044",
+      "name": "Get Commit Info"
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -672,
+        16
+      ],
+      "id": "00c74326-3864-4e59-9cba-58a932337723",
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "jsCode": "const repos = [\n  \"baodhg/ABDP\",\n  \"avatarstar1133/4TML\",\n  \"KOKONOI1706/4Loop\",\n  \"NguyenTrongNguyen04/Recurrence_Champion\",\n  \"AIZY-Outsourcing/AIZY\",\n  \"Truongdat815/404_Not_Found\",\n  \"TeddyPhamDat/Dynamo\",\n  \"nguyenbatan21112003/BrightWay\",\n  \"UGing265/ca_nhan_2\",\n  \"mineduck1608/AlphaCode\",\n  \"waanney/HCMUT-NQPN\",\n  \"The3dit0r/navy-intelli-doc\",\n  \"BUICUONGG/VLR\",\n  \"mihtriii/nguxloi\",\n  \"NhatLam1711/Sigma_boy\",\n  \"bechovang/SEAL-Underrate\",\n  \"HCMUS-HQHuy/HCMUS-HUE\",\n  \"lanam1612/DrillTime\",\n  \"NinhThienLuan/404_Brain_Not_Found\",\n  \"JascomLily/Inglorious-Basterds\",\n  \"10022007khoine-web/Canhan1\",\n  // ... thêm đủ 25 repo của bạn vào đây\n];\n\nreturn repos.map(repoFullName => {\n  // Tách chuỗi \"owner/repo\" thành hai phần\n  const parts = repoFullName.trim().split('/');\n  \n  return {\n    json: {\n      owner: parts[0],\n      repo: parts[1]\n    }\n  };\n});"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -464,
+        16
+      ],
+      "id": "24c616c4-e513-4822-8b2f-28b19a035bac",
+      "name": "repo list1"
+    },
+    {
+      "parameters": {
+        "url": "=https://api.github.com/repos/{{ $json.owner }}/{{ $json.repo }}/commits",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {}
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -272,
+        16
+      ],
+      "id": "c6559817-9000-45be-9dba-6e776ee721f5",
+      "name": "Get repo commit",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "LJChBUVqPwSaw3Fk",
+          "name": "SEAL-HACKATHON"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "// --- PHẦN 1: LẤY DỮ LIỆU ĐẦU VÀO ---\n\n// Dữ liệu chi tiết của commit từ node trước ('Get commit details')\nconst diffData = $input.item.json;\n\n// Lấy thông tin repo từ node 'repo list' để có tên đầy đủ\nconst repoInfo = $('get commit info').item.json;\n\n// --- PHẦN 2: XỬ LÝ VÀ TỔNG HỢP DỮ LIỆU ---\n\n// Khởi tạo các biến, kiểm tra an toàn để tránh lỗi nếu 'stats' không tồn tại\nconst totalAdditions = diffData.stats ? diffData.stats.additions : 0;\nconst totalDeletions = diffData.stats ? diffData.stats.deletions : 0;\nlet modifiedFileCount = 0;\nlet allPatches = [];\n\n// Lặp qua các file để đếm số file 'modified' và lấy nội dung 'patch'\nif (diffData.files && Array.isArray(diffData.files)) {\n    for (const file of diffData.files) {\n        if (file.status === 'modified') {\n            modifiedFileCount++;\n        }\n        if (file.patch) {\n            // Thêm header cho mỗi patch để AI dễ hiểu hơn\n            allPatches.push(`--- a/${file.filename}\\n+++ b/${file.filename}\\n${file.patch}`);\n        }\n    }\n}\n\n// --- PHẦN 3: TẠO CÁC ĐỐI TƯỢNG DỮ LIỆU CUỐI CÙNG ---\nconst commitTimestampUTC = diffData.commit.author.date; \n\n// 2. LOGIC CHUYỂN ĐỔI THÀNH MÚI GIỜ BẠN MUỐN (UTC+7)\nconst targetTimezoneOffsetHours = 7; \nconst targetOffsetString = `+${targetTimezoneOffsetHours < 10 ? '0' + targetTimezoneOffsetHours : targetTimezoneOffsetHours}:00`;\n\nconst dateObject = new Date(commitTimestampUTC); \n\n// Thêm offset (7 giờ) vào thời điểm UTC để có được thời điểm +07:00\nconst utcTime = dateObject.getTime();\nconst localTimeWithOffset = utcTime + (targetTimezoneOffsetHours * 60 * 60 * 1000);\nconst targetDate = new Date(localTimeWithOffset);\n\n// Hàm định dạng chuỗi theo ISO 8601 thủ công để đảm bảo có +07:00\nfunction formatToISOWithOffset(date, offsetStr) {\n    const pad = (n) => n < 10 ? '0' + n : n;\n    \n    // Lấy các thành phần ngày giờ theo UTC để đảm bảo tính toán thời gian là chính xác \n    // sau khi đã cộng thêm offset\n    const year = date.getUTCFullYear();\n    const month = pad(date.getUTCMonth() + 1);\n    const day = pad(date.getUTCDate());\n    const hours = pad(date.getUTCHours());\n    const minutes = pad(date.getUTCMinutes());\n    const seconds = pad(date.getUTCSeconds());\n    \n    return `${year}-${month}-${day}T${hours}:${minutes}:${seconds}${offsetStr}`;\n}\n\nconst newTimestamp = formatToISOWithOffset(targetDate, targetOffsetString);\n// Kết quả newTimestamp sẽ là '2025-11-01T17:03:07+07:00'\n// Tạo đối tượng cơ sở chứa các thông tin chung\nconst baseData = {\n  repo_full_name: `${repoInfo.owner}/${repoInfo.repo}`,\n  branch: 'main', // Tạm thời, vì API này không cung cấp tên nhánh\n  author_name: diffData.commit.author.name,\n  author_email: diffData.commit.author.email,\n  timestamp: newTimestamp,\n  commit_sha: diffData.sha,\n  message: diffData.commit.message,\n  added: totalAdditions,\n  removed: totalDeletions,\n  modified: modifiedFileCount,\n  programming_language: 'unknown',\n};\n\n// Dữ liệu cho Firebase là dữ liệu cơ sở\nconst lightDataForFirebase = { ...baseData };\n\n// Dữ liệu cho AI là dữ liệu cơ sở cộng thêm nội dung diff\nconst fullDataForAI = {\n  ...baseData,\n  diff_content: allPatches.join('\\n\\n') // Nối các patch lại thành một chuỗi lớn\n};\n\n// --- PHẦN 4: TRẢ VỀ KẾT QUẢ CHO N8N ---\nreturn {\n  json: {\n    firebaseData: lightDataForFirebase,\n    aiData: fullDataForAI\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        432,
+        208
+      ],
+      "id": "9fa17006-51f8-4653-b0b5-83e035dda429",
+      "name": "Summation"
+    },
+    {
+      "parameters": {
+        "url": "=https://api.github.com/repos/{{ $('get commit info').item.json.owner }}/{{ $('get commit info').item.json.repo }}/commits/{{ $('Get repo commit').item.json.sha }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        224,
+        208
+      ],
+      "id": "7caf2c6e-23ca-437f-81b3-65ba6b07a2a6",
+      "name": "Get commit details",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "LJChBUVqPwSaw3Fk",
+          "name": "SEAL-HACKATHON"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "b92e38bb-6475-4a90-befb-d540029cc981",
+              "leftValue": "={{ parseInt(Object.keys($json).length) }}",
+              "rightValue": 0,
+              "operator": {
+                "type": "number",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -16,
+        224
+      ],
+      "id": "2d945448-8cd4-4127-8f48-0bfdf3ec0d61",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "url": "https://zenlyclone-7bda4-default-rtdb.asia-southeast1.firebasedatabase.app/commit.json",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleApi",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "auth",
+              "value": "AIzaSyAiXxqEVZHXwDu_sPl-PLnWuHr3hDf-BA0"
+            },
+            {
+              "name": "orderBy",
+              "value": "=\"commit_sha\""
+            },
+            {
+              "name": "equalTo",
+              "value": "={{ `\"${$json.sha}\"` }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        48,
+        0
+      ],
+      "id": "a72a47d4-f9c3-40a2-a424-02062cb1af5c",
+      "name": "Check Query",
+      "credentials": {
+        "googleApi": {
+          "id": "PjEuClXipRaKeGCf",
+          "name": "Google Service Account account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://zenlyclone-7bda4-default-rtdb.asia-southeast1.firebasedatabase.app/commit.json",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json.firebaseData }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        624,
+        208
+      ],
+      "id": "e6c20531-fadc-40dd-8e41-7a35c19709d2",
+      "name": "INSERT Firebase1",
+      "credentials": {
+        "googleApi": {
+          "id": "PjEuClXipRaKeGCf",
+          "name": "Google Service Account account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "338770ee-fbac-44a8-aba9-abe36a3c0a1b",
+              "name": "repoFullName",
+              "value": "={{ $('Summation').item.json.firebaseData.repo_full_name }}",
+              "type": "string"
+            },
+            {
+              "id": "97fe85f8-5c5c-4826-8971-fa2f4ede1320",
+              "name": "branchName",
+              "value": "={{ $('Summation').item.json.aiData.branch }}",
+              "type": "string"
+            },
+            {
+              "id": "02252ffb-5c40-42aa-b224-84a067a6b31d",
+              "name": "commitMessages",
+              "value": "={{ $('Summation').item.json.aiData.message }}",
+              "type": "string"
+            },
+            {
+              "id": "4cc8e5ef-8742-4874-8e4f-9d65aeda69b7",
+              "name": "programmingLanguage",
+              "value": "={{ $('Summation').item.json.firebaseData.programming_language }}",
+              "type": "string"
+            },
+            {
+              "id": "d97b6df8-e052-42aa-b38f-ab012cb13c84",
+              "name": "changeStats",
+              "value": "={{\n  {\n    \"added\": $('Summation').item.json.aiData.added,\n    \"removed\": $('Summation').item.json.aiData.removed,\n    \"modified_files\": $('Summation').item.json.aiData.modified\n  }\n}}",
+              "type": "string"
+            },
+            {
+              "id": "da010869-684c-473d-ae4c-5f7e0c0db139",
+              "name": "diffContent",
+              "value": "={{ $('Summation').item.json.aiData.diff_content }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        784,
+        208
+      ],
+      "id": "4b8e858a-04d8-4f0d-8587-646110c40038",
+      "name": "Data for AI1"
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "models/gemini-2.5-pro",
+          "mode": "list",
+          "cachedResultName": "models/gemini-2.5-pro"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "=Bạn là một Trưởng nhóm Kỹ thuật (Senior Technical Lead) chuyên gia về đánh giá code. Nhiệm vụ của bạn là thực hiện một phân tích kỹ thuật sâu về một lần push code dựa trên các thông tin được cung cấp. Mục tiêu của bạn là hiểu rõ mục đích, ngăn xếp công nghệ (technology stack), và các phụ thuộc vào dịch vụ bên ngoài.\n\n**DỮ LIỆU PUSH CODE CẦN PHÂN TÍCH:**\n\n- **Repository:** {{ $('get commit info').first().json.repoFullName }}\n- **Branch:** {{ $('get commit info').first().json.branchName }}\n- **Thông điệp từ Lập trình viên (ý định):**\n\"\"\"\n{{ $('get commit info').first().json.commitMessages }}\n\"\"\"\n- **Nội dung Code đã thay đổi (bằng chứng):**\n```diff\n{{ $('get commit info').first().json.diffContent }}\nYÊU CẦU PHÂN TÍCH CHI TIẾT:\nDựa vào TOÀN BỘ dữ liệu trên, hãy phân tích và trả lời các câu hỏi sau:\n1. Phân tích Mục đích (Purpose Analysis):\nDựa vào cả \"Thông điệp từ Lập trình viên\" và \"Nội dung Code đã thay đổi\", hãy xác định mục đích chính của lần push này. Phân loại nó vào một trong các nhóm sau:\n\"Xây dựng tính năng mới\" (Feature Development)\n\"Sửa lỗi\" (Bug Fix)\n\"Tái cấu trúc Code\" (Refactoring)\n\"Cập nhật tài liệu\" (Documentation)\n\"Cài đặt & Cấu hình\" (Setup & Configuration)\n\"Khác\" (Other)\n2. Phân tích Ngôn ngữ & Framework (Technology Stack Analysis):\nPhân tích cú pháp code, các từ khóa (import, require), và tên file trong diff_content.\nXác định ngôn ngữ lập trình chính (ví dụ: JavaScript, Python, Java).\nXác định các framework hoặc thư viện lớn được sử dụng (ví dụ: React, Express.js, Django, Spring Boot).\n3. Phân tích API & Dịch vụ bên ngoài (External API & Service Detection):\nQuét kỹ diff_content để tìm bằng chứng về việc tích hợp với các dịch vụ của bên thứ ba. Tìm kiếm các dấu hiệu như:\nCác lệnh import hoặc require các SDK (ví dụ: require('stripe'), import { S3Client } from '@aws-sdk/client-s3').\nCác URL endpoint của API (ví dụ: https://api.stripe.com/v1/...).\nCác biến môi trường gợi ý dịch vụ (ví dụ: process.env.TWILIO_AUTH_TOKEN).\nCác client khởi tạo dịch vụ (ví dụ: new Stripe('sk_...')).\n4. Phân tích Dịch vụ AI (AI Service Detection):\nĐặc biệt chú ý đến các dấu hiệu tích hợp với các dịch vụ AI. Tìm kiếm các từ khóa và SDK liên quan đến:\nNhà cung cấp: OpenAI, Google (Gemini, Vertex AI), Anthropic (Claude), Hugging Face.\nFramework: LangChain, LlamaIndex.\nTên model: gpt-4, claude-3, gemini-pro.\nThư viện: openai, langchain, transformers, google-generativeai.\nĐỊNH DẠNG ĐẦU RA:\nCâu trả lời của bạn BẮT BUỘC phải là một đối tượng JSON duy nhất, không có bất kỳ văn bản nào trước hoặc sau nó. Cấu trúc JSON phải như sau:\n{\n\"purpose_analysis\": {\n\"category\": \"string\",\n\"explanation\": \"string (giải thích ngắn gọn tại sao bạn chọn category đó)\"\n},\n\"tech_stack\": {\n\"language\": \"string\",\n\"frameworks\": [\"string\"],\n\"evidence\": \"string (giải thích cách bạn xác định được tech stack)\"\n},\n\"external_apis\": [\n{\n\"service_name\": \"string (ví dụ: Stripe, AWS S3)\",\n\"evidence\": \"string (trích dẫn dòng code hoặc URL chứng minh)\"\n}\n],\n\"ai_services\": [\n{\n\"service_name\": \"string (ví dụ: OpenAI, LangChain)\",\n\"evidence\": \"string (trích dẫn thư viện hoặc từ khóa chứng minh)\"\n}\n],\n\"overall_summary\": \"string (một đoạn tóm tắt tổng quan bằng ngôn ngữ tự nhiên về lần push này)\"\n}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.googleGemini",
+      "typeVersion": 1,
+      "position": [
+        320,
+        -96
+      ],
+      "id": "5bb34dab-5b0f-4ba2-96a4-445553080bb8",
+      "name": "AI Analysis",
+      "retryOnFail": true,
+      "maxTries": 5,
+      "waitBetweenTries": 5000,
+      "credentials": {
+        "googlePalmApi": {
+          "id": "a0am0gHXQxDiILhN",
+          "name": "Google Gemini(PaLM) Api account 12"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Bước 1: Lấy chuỗi văn bản thô từ AI.\n// SỬA LỖI QUAN TRỌNG: Truy cập vào phần tử ĐẦU TIÊN [0] của mảng 'parts'.\nconst rawString = $('AI Analysis').item.json.content.parts[0].text;\n\n// Bước 2: Kiểm tra xem rawString có tồn tại không trước khi xử lý\nif (!rawString) {\n  throw new Error(\"Không nhận được nội dung text từ AI Analysis. Phản hồi có thể bị rỗng.\");\n}\n\n// Bước 3: Tìm và trích xuất JSON sạch (để phòng trường hợp AI trả về markdown)\nconst startIndex = rawString.indexOf('{');\nconst endIndex = rawString.lastIndexOf('}');\n\n// Nếu không tìm thấy JSON, trả về lỗi để dễ debug\nif (startIndex === -1 || endIndex === -1) {\n  throw new Error(\"Không tìm thấy đối tượng JSON hợp lệ trong phản hồi của AI.\");\n}\n\n// Bước 4: Trích xuất chuỗi JSON sạch\nconst cleanedJsonString = rawString.substring(startIndex, endIndex + 1);\n\n// Bước 5: Parse JSON\nlet parsedData;\ntry {\n  parsedData = JSON.parse(cleanedJsonString);\n} catch (error) {\n  throw new Error(\"Lỗi khi parse JSON: \" + error.message + \". Chuỗi JSON lỗi: \" + cleanedJsonString);\n}\n\n// Bước 6: Xử lý trường hợp AI trả về cấu trúc {\"json\": {...}}\nconst finalObject = parsedData.json || parsedData;\n\n// Bước 7: Trả về kết quả cuối cùng\nreturn {\n  aiAnalysisObject: finalObject\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        624,
+        -96
+      ],
+      "id": "ad9e3247-66fa-438e-b93c-bff8d53210ee",
+      "name": "Parse AI Response"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "// Lấy đối tượng phân tích đã được parse từ node trước\nconst analysis = $('Parse AI Response').item.json.aiAnalysisObject;\n\n// SỬA LỖI DUY NHẤT Ở ĐÂY: Dùng đúng tên node mà bạn đã đặt là 'Get Data'\nconst originalData = $('get commit info').first().json;\n\n// --- 1. TẠO TIÊU ĐỀ (TITLE) CHO ISSUE ---\nconst issueTitle = `[SEAL Hackathon Analyst]`;\n\n\n// --- 2. TẠO NỘI DUNG (BODY) BẰNG MARKDOWN ---\n// Phần còn lại của code đã đúng, không cần thay đổi.\nlet issueBody = `## 🤖 Phân tích Tự động cho Commit\\n\\n`;\nissueBody += `${analysis.purpose_analysis.category}`;\nissueBody += `**Tóm tắt tổng quan:** ${analysis.overall_summary}\\n\\n`;\nissueBody += `### 📝 Phân tích Chi tiết\\n`;\nissueBody += `| Hạng mục | Kết quả |\\n`;\nissueBody += `|---|---|\\n`;\nissueBody += `| **🎯 Mục đích** | ${analysis.purpose_analysis.category}: *${analysis.purpose_analysis.explanation}* |\\n`;\n\n// Kiểm tra tech_stack có tồn tại không trước khi truy cập\nif (analysis.tech_stack) {\n  issueBody += `| **💻 Ngôn ngữ & Framework** | ${analysis.tech_stack.language || 'N/A'} / ${(analysis.tech_stack.frameworks || []).join(', ') || 'N/A'} |\\n\\n`;\n}\n\n// --- 2a. Liệt kê các API bên ngoài ---\nissueBody += `### 🔌 API & Dịch vụ Bên ngoài được phát hiện\\n`;\nif (analysis.external_apis && analysis.external_apis.length > 0) {\n  for (const api of analysis.external_apis) {\n    issueBody += `- **${api.service_name}**: Phát hiện qua \\`${api.evidence}\\`\\n`;\n  }\n} else {\n  issueBody += `*Không phát hiện dịch vụ nào.*\\n`;\n}\nissueBody += `\\n`;\n\n// --- 2b. Liệt kê các dịch vụ AI ---\nissueBody += `### 🧠 Dịch vụ AI được phát hiện\\n`;\nif (analysis.ai_services && analysis.ai_services.length > 0) {\n  for (const ai of analysis.ai_services) {\n    issueBody += `- **${ai.service_name}**: Phát hiện qua \\`${ai.evidence}\\`\\n`;\n  }\n} else {\n  issueBody += `*Không phát hiện dịch vụ AI nào.*\\n`;\n}\n\n// --- 3. TRẢ VỀ KẾT QUẢ ĐÃ ĐỊNH DẠNG ---\nreturn {\n  json: {\n    issueTitle: issueTitle,\n    issueBody: issueBody,\n    repoFullName: originalData.repoFullName \n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        784,
+        -96
+      ],
+      "id": "21c9526e-3288-43be-8a13-4e8c1266e6f8",
+      "name": "Parse Data for Issue"
+    },
+    {
+      "parameters": {
+        "owner": {
+          "__rl": true,
+          "value": "={{ $('Parse Data for Issue').item.json.repoFullName.split('/')[0] }}",
+          "mode": "name"
+        },
+        "repository": {
+          "__rl": true,
+          "value": "={{ $('Parse Data for Issue').item.json.repoFullName.split('/')[1] }}\n",
+          "mode": "name"
+        },
+        "title": "={{ $('Parse Data for Issue').item.json.issueTitle }}\n",
+        "body": "={{ $('Parse Data for Issue').item.json.issueBody }}\n",
+        "labels": [],
+        "assignees": []
+      },
+      "type": "n8n-nodes-base.github",
+      "typeVersion": 1.1,
+      "position": [
+        1056,
+        32
+      ],
+      "id": "01e30f1c-8a29-4d86-90f9-97ea6d44b47a",
+      "name": "Create an issue",
+      "webhookId": "e586edf4-e173-4840-9a08-13073e98f3bc",
+      "credentials": {
+        "githubApi": {
+          "id": "2yndYjyaH8juXXYY",
+          "name": "SEAL Hackathon"
+        }
+      }
+    }
+  ],
+  "pinData": {
+    "Data for AI": [
+      {
+        "json": {
+          "name": "-OcjwLUJlSymVg6iTRlV"
+        }
+      }
+    ]
+  },
+  "connections": {
+    "Get diff": {
+      "main": [
+        [
+          {
+            "node": "git diff summation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "git diff summation": {
+      "main": [
+        [
+          {
+            "node": "INSERT Firebase",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "INSERT Firebase": {
+      "main": [
+        [
+          {
+            "node": "Data for AI",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Data for AI": {
+      "main": [
+        [
+          {
+            "node": "AI Analysis",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "repo list": {
+      "main": [
+        [
+          {
+            "node": "Allowed Repo",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Allowed Repo": {
+      "main": [
+        [
+          {
+            "node": "Get diff",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Get Commit Info",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Commit Info": {
+      "main": [
+        [
+          {
+            "node": "repo list",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "repo list1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "repo list1": {
+      "main": [
+        [
+          {
+            "node": "Get repo commit",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get repo commit": {
+      "main": [
+        [
+          {
+            "node": "Check Query",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Summation": {
+      "main": [
+        [
+          {
+            "node": "INSERT Firebase1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get commit details": {
+      "main": [
+        [
+          {
+            "node": "Summation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Get commit details",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Query": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "INSERT Firebase1": {
+      "main": [
+        [
+          {
+            "node": "Data for AI1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Data for AI1": {
+      "main": [
+        [
+          {
+            "node": "Create an issue",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Analysis": {
+      "main": [
+        [
+          {
+            "node": "Parse AI Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse AI Response": {
+      "main": [
+        [
+          {
+            "node": "Parse Data for Issue",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Data for Issue": {
+      "main": [
+        [
+          {
+            "node": "Create an issue",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "Asia/Vientiane",
+    "callerPolicy": "workflowsFromSameOwner",
+    "executionTimeout": -1
+  },
+  "versionId": "0f0cf978-a500-4e53-9b06-b7b39f5391bd",
+  "meta": {
+    "instanceId": "3726bc349d670c49810ac1adbaf2c344a26110003c0b15c966645e06562eda8c"
+  },
+  "id": "xjfWpsWZI9iKv8d0",
+  "tags": []
+}
