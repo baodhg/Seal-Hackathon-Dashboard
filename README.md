@@ -141,6 +141,9 @@ docker run -it --rm \
 ```
 
 ### Frontend screenshots
+- Start frame
+  ![Start Frame](docs/images/start_frame.png)
+  
 - Overall dashboard (UI)
   ![Dashboard](docs/images/dashboard.png)
 
@@ -148,9 +151,6 @@ docker run -it --rm \
   ![Animation](docs/images/animation.png)
 
 ### n8n overview (backend)
-- Start frame
-  ![Start Frame](docs/images/start_frame.png)
-
 - Workflow list
   ![Workflows](docs/images/workflows.png)
 
