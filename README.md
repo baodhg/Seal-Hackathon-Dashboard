@@ -4,18 +4,6 @@ A realtime dashboard that visualizes Git commit activities from hackathon teams.
 
 ---
 
-## Documentation Images
-
-The gallery below embeds every asset stored in `docs/images` so they render directly on GitHub.
-
-![Animation overlay](docs/images/animation.png)
-![Dashboard overview](docs/images/dashboard.png)
-![Start frame](docs/images/start_frame.png)
-![Workflow list](docs/images/workflows.png)
-![Workflow summary](docs/images/workflow_summary.png)
-
----
-
 ## Tech Stack
 - React 19 + Vite 7
 - React Router 7
@@ -117,6 +105,9 @@ Note: if images do not render on GitHub, ensure the files listed under `docs/ima
 ## Backend (n8n) – Overview & How to Run
 
 This project uses n8n for the backend. The workflow(s) are exported to JSON and can be imported directly into n8n.
+
+![Workflow list](docs/images/workflows.png)
+![Workflow summary](docs/images/workflow_summary.png)
 
 ### What the backend does
 - Receives or pulls commit events
