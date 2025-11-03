@@ -55,49 +55,50 @@ npm run preview
 
 ## Project Structure
 ```text
-Seal-Hackathon-Dashboard/
-├─ package.json
-├─ vite.config.js
-├─ tailwind.config.js
-├─ postcss.config.js
-├─ process-commit.json                # original n8n export (kept for compatibility)
-├─ docs/
-│  ├─ images/                         # documentation images
-│  │  ├─ dashboard.png
-│  │  ├─ start_frame.png
-│  │  ├─ workflows.png
-│  │  ├─ animation.png
-│  │  └─ workflow_summary.png
-│  └─ workflows/
-│     └─ process-commit.json          # curated copy of n8n workflow export
-├─ README.md
-├─ index.html
-├─ src/
-│  ├─ main.jsx                  # React entrypoint
-│  ├─ index.css                 # Global styles + Tailwind
-│  ├─ App.jsx                   # App component (renders routes)
-│  ├─ common/
-│  │  └─ path.js               # Route path definitions
-│  ├─ hooks/
-│  │  ├─ useRealtimeCommits.js
-│  │  └─ useRootesCoustom.jsx  # Route configuration via react-router
-│  ├─ pages/
-│  │  └─ HomePage.jsx          # Main page (effects + commit board)
-│  ├─ components/
-│  │  ├─ CommitBoard/CommitBoard.jsx
-│  │  ├─ MainHeader/MainHeader.jsx
-│  │  ├─ CountdownClock.jsx
-│  │  └─ PageNotFound/PageNotFound.jsx
-│  ├─ service/
-│  │  ├─ realtimeManager.js    # Provider abstraction
-│  │  └─ realtimeProviders/
-│  │     └─ firebaseProvider.js # Listen to commits from Firebase
-│  ├─ template/
-│  │  └─ MainTemplate/MainTemplate.jsx
-│  └─ utils/
-│     └─ converCommitToHeapmap.js
-└─ .env.template                # Example env variables (safe to commit)
+📦 Seal-Hackathon-Dashboard/
+├─ 📄 package.json
+├─ 📄 vite.config.js
+├─ 📄 tailwind.config.js
+├─ 📄 postcss.config.js
+├─ 📄 process-commit.json                # original n8n export (kept for compatibility)
+├─ 📁 docs/
+│  ├─ 📁 images/                         # documentation images
+│  │  ├─ 🖼️ dashboard.png                # frontend UI screenshot
+│  │  ├─ 🖼️ animation.png                # frontend animation overlay
+│  │  ├─ 🖼️ start_frame.png              # n8n start frame
+│  │  ├─ 🖼️ workflows.png                # n8n workflow list
+│  │  └─ 🖼️ workflow_summary.png         # n8n workflow summary
+│  └─ 📁 workflows/
+│     └─ 📄 process-commit.json          # curated copy of n8n workflow export
+├─ 📄 README.md
+├─ 📄 index.html
+├─ 📁 src/
+│  ├─ 📄 main.jsx                  # React entrypoint
+│  ├─ 📄 index.css                 # Global styles + Tailwind
+│  ├─ 📄 App.jsx                   # App component (renders routes)
+│  ├─ 📁 common/
+│  │  └─ 📄 path.js               # Route path definitions
+│  ├─ 📁 hooks/
+│  │  ├─ 📄 useRealtimeCommits.js
+│  │  └─ 📄 useRootesCoustom.jsx  # Route configuration via react-router
+│  ├─ 📁 pages/
+│  │  └─ 📄 HomePage.jsx          # Main page (effects + commit board)
+│  ├─ 📁 components/
+│  │  ├─ 📄 CommitBoard/CommitBoard.jsx
+│  │  ├─ 📄 MainHeader/MainHeader.jsx
+│  │  ├─ 📄 CountdownClock.jsx
+│  │  └─ 📄 PageNotFound/PageNotFound.jsx
+│  ├─ 📁 service/
+│  │  ├─ 📄 realtimeManager.js    # Provider abstraction
+│  │  └─ 📁 realtimeProviders/
+│  │     └─ 📄 firebaseProvider.js # Listen to commits from Firebase
+│  ├─ 📁 template/
+│  │  └─ 📄 MainTemplate/MainTemplate.jsx
+│  └─ 📁 utils/
+│     └─ 📄 converCommitToHeapmap.js
+└─ 📄 .env.template                # Example env variables (safe to commit)
 ```
+Note: if images do not render on GitHub, ensure the files listed under `docs/images/` exist and are committed with the exact filenames and casing shown above.
 
 ---
 
@@ -139,18 +140,19 @@ docker run -it --rm \
   n8nio/n8n:latest
 ```
 
-### Workflow screenshots
-- Overall dashboard
+### Frontend screenshots
+- Overall dashboard (UI)
   ![Dashboard](docs/images/dashboard.png)
 
+- Animation overlay
+  ![Animation](docs/images/animation.png)
+
+### n8n overview (backend)
 - Start frame
   ![Start Frame](docs/images/start_frame.png)
 
 - Workflow list
   ![Workflows](docs/images/workflows.png)
-
-- Animation overview
-  ![Animation](docs/images/animation.png)
 
 - Workflow summary
   ![Workflow Summary](docs/images/workflow_summary.png)
